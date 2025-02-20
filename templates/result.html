@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Result</h1>
+    <h2>Your Score: {{ score }} / 100</h2>
+    <h3>Recorded Audio:</h3>
+    <audio controls>
+        <source src="{{ url_for('recorded_audio_file', filename=recorded_audio_file) }}" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+    <a href="/">Go back to home</a>
+</body>
+</html>
+
+
+
