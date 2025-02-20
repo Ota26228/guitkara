@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaoke Player</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        #countdown-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5em;
+            color: red;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Karaoke Player</h1>
+    <h2>Now playing: {{ filename }}</h2>
+    <div id="countdown-container" style="display: none;">
+        <div id="countdown"></div>
+    </div>
+    <audio id="audio-player" controls>
+        <source src="{{ url_for('uploaded_audio_file', filename=filename) }}" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <button id="start-record-btn">Start Recording</button>
+    <button id="stop-record-btn" disabled>Stop Recording</button>
+    <script>
+        const startRecordBtn = document.getElementById('start-record-btn');
+        const stopRecordBtn = document.getElementById('stop-record-btn');
+        const audioPlayer = document.getElementById('audio-player');
+        const countdownContainer = document.getElementById('countdown-container');
+        const countdownDiv = document.getElementById('countdown');
+
+        const filename = "{{ filename }}";
+
+        let mediaRecorder;
+        let audioChunks = [];
+
+        function createWavFile(blob) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const buffer = new ArrayBuffer(44 + reader.result.byteLength);
+                    const view = new DataView(buffer);
+
+                    // WAVファイルヘッダーの作成
+                    const writeString = (view, offset, string) => {
+                        for (let i = 0; i < string.length; i++) {
+                            view.setUint8(offset + i, string.charCodeAt(i));
+                        }
+                    };
+
+                    writeString(view, 0, 'RIFF');
+                    view.setUint32(4, 36 + reader.result.byteLength, true);
+                    writeString(view, 8, 'WAVE');
+                    writeString(view, 12, 'fmt ');
+                    view.setUint32(16, 16, true);
+                    view.setUint16(20, 1, true);
+                    view.setUint16(22, 1, true); // チャンネル数（モノラル）
+                    view.setUint32(24, 44100, true); // サンプルレート
+                    view.setUint32(28, 44100 * 2, true); // バイトレート
+                    view.setUint16(32, 2, true); // ブロックアラインメント
+                    view.setUint16(34, 16, true); // ビット深度
+                    writeString(view, 36, 'data');
+                    view.setUint32(40, reader.result.byteLength, true);
+
+                    const wavArray = new Uint8Array(buffer);
+                    wavArray.set(new Uint8Array(reader.result), 44);
+
+                    resolve(new Blob([wavArray], { type: 'audio/wav' }));
+                };
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    console.log('Microphone access granted');
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+                    console.log('Recording started');
+                    audioChunks = [];
+
+                    mediaRecorder.addEventListener('dataavailable', event => {
+                        console.log('Data available:', event.data);
+                        audioChunks.push(event.data);
+                    });
+
+                    mediaRecorder.addEventListener('stop', async () => {
+                        console.log('Recording stopped');
+                        if (audioChunks.length > 0) {
+                            const audioBlob = new Blob(audioChunks);
+                            const wavBlob = await createWavFile(audioBlob);
+                            const formData = new FormData();
+                            formData.append('audio_file', wavBlob, 'recorded_audio.wav');
+                            console.log(`Recorded Audio Length: ${audioChunks.length} chunks`);
+
+                            fetch('/save_recording', { method: 'POST', body: formData })
+                                .then(response => response.text())
+                                .then(result => {
+                                    console.log(result);
+                                    window.location.href = `/result/${encodeURIComponent(filename)}`;
+                                })
+                                .catch(error => {
+                                    console.error('Error saving recording:', error);
+                                });
+                        } else {
+                            console.error('No audio data recorded');
+                        }
+                    });
+
+                    audioPlayer.play();
+                    startRecordBtn.disabled = true;
+                    stopRecordBtn.disabled = false;
+
+                    audioPlayer.addEventListener('ended', () => {
+                        if (mediaRecorder.state !== 'inactive') {
+                            mediaRecorder.stop();
+                            console.log('Recording requested to stop as audio ended');
+                        }
+                        startRecordBtn.disabled = false;
+                        stopRecordBtn.disabled = true;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error accessing microphone:', error);
+                });
+        }
+
+        function startCountdown(seconds, callback) {
+            countdownContainer.style.display = 'block';
+            countdownDiv.textContent = seconds;
+            const interval = setInterval(() => {
+                seconds--;
+                if (seconds > 0) {
+                    countdownDiv.textContent = seconds;
+                } else {
+                    clearInterval(interval);
+                    countdownContainer.style.display = 'none';
+                    countdownDiv.textContent = '';
+                    callback();
+                }
+            }, 1000);
+        }
+
+        startRecordBtn.addEventListener('click', () => {
+            startCountdown(3, startRecording);
+        });
+
+        stopRecordBtn.addEventListener('click', () => {
+            if (mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                console.log('Recording requested to stop');
+            }
+            startRecordBtn.disabled = false;
+            stopRecordBtn.disabled = true;
+            audioPlayer.pause();
+        });
+    </script>
+</body>
+</html>

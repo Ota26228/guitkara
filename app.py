@@ -7,12 +7,12 @@ import wave
 app = Flask(__name__)
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
-RECORD_FOLDER = os.path.join(app.root_path, 'static', 'recorded')
+RECORDED_FOLDER = os.path.join(app.root_path, 'static', 'recorded')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(RECORD_FOLDER, exist_ok=True)
+os.makedirs(RECORDED_FOLDER, exist_ok=True)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['RECORD_FOLDER'] = RECORD_FOLDER
+app.config['RECORDED_FOLDER'] = RECORDED_FOLDER
 
 @app.route('/')
 def index():
@@ -28,7 +28,7 @@ def uploaded_audio_file(filename):
 
 @app.route('/recorded/<filename>')
 def recorded_audio_file(filename):
-    return send_from_directory(app.config['RECORD_FOLDER'], filename)
+    return send_from_directory(app.config['RECORDED_FOLDER'], filename)
 
 @app.route('/save_recording', methods=['POST'])
 def save_recording():
@@ -41,7 +41,7 @@ def save_recording():
         print('No file selected')
         return 'No file selected', 400
 
-    recording_path = os.path.join(app.config['RECORD_FOLDER'], 'recorded_audio.wav')
+    recording_path = os.path.join(app.config['RECORDED_FOLDER'], 'recorded_audio.wav')
     audio_file.save(recording_path)
     print(f'Recording saved at: {recording_path}')
 
@@ -49,7 +49,7 @@ def save_recording():
 
 @app.route('/result/<filename>')
 def result(filename):
-    recorded_audio_path = os.path.join(app.config['RECORD_FOLDER'], 'recorded_audio.wav')
+    recorded_audio_path = os.path.join(app.config['RECORDED_FOLDER'], 'recorded_audio.wav')
     specific_audio_path_mp3 = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     specific_audio_path_wav = specific_audio_path_mp3.replace(".mp3", ".wav")
 
@@ -92,7 +92,7 @@ def result(filename):
         # スコアを100点満点に正規化
         score = max(0, min(100, (correlation + 1) / 2 * 100))
 
-        return render_template('result.html', score=int(score), recorded_audio_file='recorded_audio.wav')
+        return render_template('result.html', score=int(score), recorded_audio_file=url_for('recorded_audio_file', filename='recorded_audio.wav'))
 
     except Exception as e:
         return f"Error processing audio files: {str(e)}"

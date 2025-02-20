@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaoke App</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Welcome to the Karaoke App</h1>
+    <h2>Choose a song:</h2>
+    <ul>
+        <li><a href="{{ url_for('play_audio', filename='y2mate.com - ABC Riff.mp3') }}">ABC-riff</a></li>
+        <!-- 他の曲をここに追加 -->
+        <li><a href="{{ url_for('play_audio', filename='y2mate.com - Polyphia Album 4 Teaser.mp3') }}">Playng God-riff 2</a></li>
+        <li><a href="{{ url_for('play_audio', filename='y2mate.com - Bloodbath Solo.mp3') }}">Bloodbath-Solo</a></li>
+    </ul>
+</body>
+</html>
