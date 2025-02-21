@@ -5,7 +5,6 @@ import subprocess
 import wave
 from pydub import AudioSegment
 import librosa
-import json
 
 app = Flask(__name__)
 
@@ -21,15 +20,47 @@ app.config['RECORDED_FOLDER'] = RECORDED_FOLDER
 def index():
     return render_template('index.html')
 
-@app.route('/play_audio/<filename>')
-def play_audio(filename):
-    json_path = os.path.join(app.root_path, "static", "tabs.json")
-    try:
-        with open(json_path, "r", encoding="utf-8") as file:
-            tabs = json.load(file)
-        return render_template('play.html', filename=filename, tabs=tabs)
-    except Exception as e:
-        return f"Error loading tabs: {str(e)}", 500
+@app.route('/play/<filename>')
+def play(filename):
+    songs = [ 
+        {
+        'title': 'y2mate.com - ABC Riff.mp3',
+        'tab': '''
+E: --------------------------------sl------------sl-----------------------------sl-----------p-----------------------------------T---------T----------------
+B: -----------------------------10----12-----10--11--10-----8---------------10------11---10-----8---------x------10----------------------------------------
+G: ------9/------------x-------------------------------------------9--------8-----------------------------x------11---------------------------------------
+D: -------------------------------------------------------------------------------------------------------x------13--------------21-----------------------
+A: ------7/------------x----------------------------------------------------6----------------------------------------------------------------------------------
+E: ------8/------------x----------------------------------------------------7--------------------------------------------------------------7----------------'''
+        },
+        {
+        'title': 'y2mate.com - Polyphia Album 4 Teaser.mp3',
+        'tab': '''
+E: ------------
+B: ------4-----
+G: ------2-----
+D: --0--------3-
+A: ---------------------------------
+E: ------------'''
+        },
+        {
+        'title': 'y2mate.com - Bloodbath Solo.mp3',
+        'tab': '''6th String: ------------
+5th String: --0--3-----
+4th String: ------4-----
+3rd String: ------2-----
+2nd String: --0--------3-
+1st String: ------------'''
+        }
+]
+
+
+    song = next((song for song in songs if song['title'] == filename), None)
+
+    if song is None:
+        return f"Song '{filename}' not found", 404
+
+    return render_template('play.html', filename=filename, song=song)
 
 @app.route('/uploads/<filename>')
 def uploaded_audio_file(filename):
@@ -60,16 +91,19 @@ def calculate_score(recorded_audio, target_audio):
     x = read_wav(target_audio)
 
     if np.all(y == 0):
-        return 60  # 無音の場合
+        return 40  # 無音なら最低スコア
 
     min_length = min(len(x), len(y))
     y, x = y[:min_length], x[:min_length]
+    
     correlation = np.corrcoef(y, x)[0, 1] if np.std(y) > 0 and np.std(x) > 0 else 0
+    score_from_correlation = (correlation + 1) * 10  # 最大20点
 
-    score_from_correlation = (correlation + 1) * 20
-    score_from_pitch = (analyze_pitch(recorded_audio) / 100) * 10
+    pitch_score = (analyze_pitch(recorded_audio) / 100) * 3  # 最大3点
 
-    return max(60, min(100, 60 + score_from_correlation + score_from_pitch))
+    final_score = 40 + score_from_correlation + pitch_score
+    return max(40, min(85, int(final_score)))  # 40~85点に制限
+
 
 @app.route('/save_recording', methods=['POST'])
 def save_recording():

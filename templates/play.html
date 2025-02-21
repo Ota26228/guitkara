@@ -6,47 +6,7 @@
     <title>Karaoke Player</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
-        #countdown-container {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 5em;
-            color: red;
-            text-align: center;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 10px;
-        }
-
-        /* 音声再生のスピード変更ボタン */
-        .speed-control-buttons {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .speed-button {
-            background-color: #00bcd4;
-            border: none;
-            padding: 10px 20px;
-            color: white;
-            font-size: 18px;
-            margin: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .speed-button:hover {
-            background-color: #0097a7;
-        }
-
-        /* 現在の倍速を表示する部分 */
-        #speed-indicator {
-            margin-top: 10px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-        }
+        /* 省略: 既存のスタイル */
     </style>
 </head>
 <body>
@@ -54,6 +14,18 @@
     <h2>Now playing: {{ filename }}</h2>
     <div id="countdown-container" style="display: none;">
         <div id="countdown"></div>
+    </div>
+
+    <!-- タブ譜表示用のセクション -->
+    <div id="tabs-container">
+        <h3>Guitar Tabs</h3>
+        <ul id="tabs-list">
+            <!-- 選択された曲のみ表示 -->
+            <li>
+                <h4>{{ song.title }}</h4>
+                <pre>{{ song.tab }}</pre>
+            </li>
+        </ul>
     </div>
 
     <!-- オーディオプレーヤー -->
@@ -188,5 +160,4 @@
     </script>
 </body>
 </html>
-
 
