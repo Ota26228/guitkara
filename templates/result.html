@@ -9,6 +9,19 @@
 <body>
     <h1>Result</h1>
     <h2>Your Score: {{ score }} / 100</h2>
+    <!-- 点数に応じたメッセージ -->
+    <div id="message">
+        {% if score < 70 %}
+            <p>Keep going! You're just getting started. Let's aim for a better score next time!</p>
+        {% elif score >= 70 and score < 80 %}
+            <p>Great job! Aim for 80 or more next time!</p>
+        {% elif score >= 80 and score < 90 %}
+            <p>Nice work! Let's aim for 90 or higher next time!</p>
+        {% else %}
+            <p>Awesome! You're on fire! Keep it up!</p>
+        {% endif %}
+    </div>
+
     <h3>Recorded Audio:</h3>
     <audio controls>
         <source src="{{ url_for('recorded_audio_file', filename='recorded_audio.wav') }}" type="audio/wav">

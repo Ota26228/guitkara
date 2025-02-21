@@ -18,6 +18,35 @@
             padding: 20px;
             border-radius: 10px;
         }
+
+        /* 音声再生のスピード変更ボタン */
+        .speed-control-buttons {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .speed-button {
+            background-color: #00bcd4;
+            border: none;
+            padding: 10px 20px;
+            color: white;
+            font-size: 18px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .speed-button:hover {
+            background-color: #0097a7;
+        }
+
+        /* 現在の倍速を表示する部分 */
+        #speed-indicator {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -26,11 +55,23 @@
     <div id="countdown-container" style="display: none;">
         <div id="countdown"></div>
     </div>
+
+    <!-- オーディオプレーヤー -->
     <audio id="audio-player" controls>
         <source src="{{ url_for('uploaded_audio_file', filename=filename) }}" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
     
+    <!-- スピード調整ボタン -->
+    <div class="speed-control-buttons">
+        <button class="speed-button" id="speed-0.75">0.75x Speed</button>
+        <button class="speed-button" id="speed-0.5">0.5x Speed</button>
+        <button class="speed-button" id="speed-1">Normal Speed</button>
+    </div>
+
+    <!-- 現在の倍速表示 -->
+    <div id="speed-indicator">Current speed: 1x</div>
+
     <button id="start-recording">Start Recording</button>
     <button id="stop-recording" style="display: none;">Stop Recording</button>
 
@@ -41,6 +82,7 @@
         const startRecordingBtn = document.getElementById('start-recording');
         const stopRecordingBtn = document.getElementById('stop-recording');
         const filename = "{{ filename }}";
+        const speedIndicator = document.getElementById('speed-indicator');
 
         let mediaRecorder;
         let audioChunks = [];
@@ -49,7 +91,6 @@
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
                     stream.getTracks().forEach(track => track.stop());
-                    // ここで何もする必要はなく、startボタンをクリックすれば音声録音と再生を開始
                 })
                 .catch(error => {
                     console.error('Error accessing microphone:', error);
@@ -59,45 +100,34 @@
         function startRecording() {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
-                    console.log('Microphone access granted');
                     mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
                     audioChunks = [];
 
                     mediaRecorder.addEventListener('dataavailable', event => {
-                        console.log('Data available:', event.data);
                         if (event.data.size > 0) {
                             audioChunks.push(event.data);
                         }
                     });
 
                     mediaRecorder.addEventListener('stop', async () => {
-                        console.log('Recording stopped');
                         if (audioChunks.length > 0) {
                             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
 
                             const formData = new FormData();
                             formData.append('audio_file', audioBlob, 'recorded_audio.webm');
 
-                            console.log(`Recorded Audio Length: ${audioChunks.length} chunks`);
-
                             fetch('/save_recording', { method: 'POST', body: formData })
                                 .then(response => response.text())
                                 .then(result => {
-                                    console.log(result);
                                     window.location.href = `/result/${encodeURIComponent(filename)}`;
                                 })
                                 .catch(error => {
                                     console.error('Error saving recording:', error);
                                 });
-                        } else {
-                            console.error('No audio data recorded');
                         }
                     });
 
                     mediaRecorder.start();
-                    console.log('Recording started');
-
-                    // ボタンの表示を切り替える
                     startRecordingBtn.style.display = "none";
                     stopRecordingBtn.style.display = "block";
                 })
@@ -109,9 +139,6 @@
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                console.log('Recording manually stopped');
-
-                // ボタンの表示を元に戻す
                 stopRecordingBtn.style.display = "none";
                 startRecordingBtn.style.display = "block";
             }
@@ -127,22 +154,36 @@
                 } else {
                     clearInterval(interval);
                     countdownContainer.style.display = 'none';
-                    countdownDiv.textContent = '';
                     callback();
                 }
             }, 1000);
         }
 
+        // スピード変更のイベントリスナー
+        document.getElementById('speed-0.75').addEventListener('click', () => {
+            audioPlayer.playbackRate = 0.75;
+            speedIndicator.textContent = "Current speed: 0.75x";
+        });
+
+        document.getElementById('speed-0.5').addEventListener('click', () => {
+            audioPlayer.playbackRate = 0.5;
+            speedIndicator.textContent = "Current speed: 0.5x";
+        });
+
+        document.getElementById('speed-1').addEventListener('click', () => {
+            audioPlayer.playbackRate = 1;
+            speedIndicator.textContent = "Current speed: 1x";
+        });
+
         startRecordingBtn.addEventListener("click", () => {
             startCountdown(3, () => {
-                audioPlayer.play(); // 音声を再生
-                startRecording(); // 録音を開始
+                audioPlayer.play();
+                startRecording();
             });
         });
 
         stopRecordingBtn.addEventListener("click", stopRecording);
 
-        // ページがロードされたときにマイク選択をプロンプト
         window.onload = promptMicrophoneSelection;
     </script>
 </body>

@@ -107,4 +107,32 @@ button:active {
         width: 80%;
     }
 }
+/* 音声再生バーのスタイル */
+audio {
+    width: 100%; /* 幅を100%にして画面いっぱいに表示 */
+    height: 10px; /* 高さを設定 */
+    background: #ddd; /* バックグラウンド色（薄い灰色） */
+    border-radius: 5px; /* 丸みをつける */
+    outline: none; /* デフォルトの青い枠線をなくす */
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1); /* 影をつける */
+}
+
+/* 再生中のバーの色 */
+audio::-webkit-media-controls-panel {
+    background: linear-gradient(90deg, #00bcd4, #4caf50); /* グラデーションで目を引く */
+    border-radius: 5px;
+}
+
+/* バーの進行状況を強調 */
+audio::-webkit-media-controls-play-button {
+    background-color: #ff9800; /* プレイボタンを目立たせる */
+    border-radius: 50%;
+}
+
+/* 音量調整スライダー */
+audio::-webkit-media-controls-volume-slider {
+    background: #ff4081; /* ボリュームスライダーの色 */
+    border-radius: 10px;
+}
+
 
