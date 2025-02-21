@@ -134,5 +134,15 @@ audio::-webkit-media-controls-volume-slider {
     background: #ff4081; /* ボリュームスライダーの色 */
     border-radius: 10px;
 }
+#tab-container {
+    font-family: 'Courier New', monospace;
+    margin-top: 20px;
+}
+
+#tab-container div {
+    font-size: 1.5em;
+    margin: 5px 0;
+    color: #fff;
+}
 
 
