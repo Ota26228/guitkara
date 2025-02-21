@@ -30,78 +30,54 @@
         <source src="{{ url_for('uploaded_audio_file', filename=filename) }}" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
-    <button id="start-record-btn">Start Recording</button>
-    <button id="stop-record-btn" disabled>Stop Recording</button>
+    
+    <button id="start-recording">Start Recording</button>
+    <button id="stop-recording" style="display: none;">Stop Recording</button>
+
     <script>
-        const startRecordBtn = document.getElementById('start-record-btn');
-        const stopRecordBtn = document.getElementById('stop-record-btn');
         const audioPlayer = document.getElementById('audio-player');
         const countdownContainer = document.getElementById('countdown-container');
         const countdownDiv = document.getElementById('countdown');
-
+        const startRecordingBtn = document.getElementById('start-recording');
+        const stopRecordingBtn = document.getElementById('stop-recording');
         const filename = "{{ filename }}";
 
         let mediaRecorder;
         let audioChunks = [];
 
-        function createWavFile(blob) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const buffer = new ArrayBuffer(44 + reader.result.byteLength);
-                    const view = new DataView(buffer);
-
-                    // WAVファイルヘッダーの作成
-                    const writeString = (view, offset, string) => {
-                        for (let i = 0; i < string.length; i++) {
-                            view.setUint8(offset + i, string.charCodeAt(i));
-                        }
-                    };
-
-                    writeString(view, 0, 'RIFF');
-                    view.setUint32(4, 36 + reader.result.byteLength, true);
-                    writeString(view, 8, 'WAVE');
-                    writeString(view, 12, 'fmt ');
-                    view.setUint32(16, 16, true);
-                    view.setUint16(20, 1, true);
-                    view.setUint16(22, 1, true); // チャンネル数（モノラル）
-                    view.setUint32(24, 44100, true); // サンプルレート
-                    view.setUint32(28, 44100 * 2, true); // バイトレート
-                    view.setUint16(32, 2, true); // ブロックアラインメント
-                    view.setUint16(34, 16, true); // ビット深度
-                    writeString(view, 36, 'data');
-                    view.setUint32(40, reader.result.byteLength, true);
-
-                    const wavArray = new Uint8Array(buffer);
-                    wavArray.set(new Uint8Array(reader.result), 44);
-
-                    resolve(new Blob([wavArray], { type: 'audio/wav' }));
-                };
-                reader.readAsArrayBuffer(blob);
-            });
+        function promptMicrophoneSelection() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    stream.getTracks().forEach(track => track.stop());
+                    // ここで何もする必要はなく、startボタンをクリックすれば音声録音と再生を開始
+                })
+                .catch(error => {
+                    console.error('Error accessing microphone:', error);
+                });
         }
 
         function startRecording() {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
                     console.log('Microphone access granted');
-                    mediaRecorder = new MediaRecorder(stream);
-                    mediaRecorder.start();
-                    console.log('Recording started');
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
                     audioChunks = [];
 
                     mediaRecorder.addEventListener('dataavailable', event => {
                         console.log('Data available:', event.data);
-                        audioChunks.push(event.data);
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                        }
                     });
 
                     mediaRecorder.addEventListener('stop', async () => {
                         console.log('Recording stopped');
                         if (audioChunks.length > 0) {
-                            const audioBlob = new Blob(audioChunks);
-                            const wavBlob = await createWavFile(audioBlob);
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+
                             const formData = new FormData();
-                            formData.append('audio_file', wavBlob, 'recorded_audio.wav');
+                            formData.append('audio_file', audioBlob, 'recorded_audio.webm');
+
                             console.log(`Recorded Audio Length: ${audioChunks.length} chunks`);
 
                             fetch('/save_recording', { method: 'POST', body: formData })
@@ -118,22 +94,27 @@
                         }
                     });
 
-                    audioPlayer.play();
-                    startRecordBtn.disabled = true;
-                    stopRecordBtn.disabled = false;
+                    mediaRecorder.start();
+                    console.log('Recording started');
 
-                    audioPlayer.addEventListener('ended', () => {
-                        if (mediaRecorder.state !== 'inactive') {
-                            mediaRecorder.stop();
-                            console.log('Recording requested to stop as audio ended');
-                        }
-                        startRecordBtn.disabled = false;
-                        stopRecordBtn.disabled = true;
-                    });
+                    // ボタンの表示を切り替える
+                    startRecordingBtn.style.display = "none";
+                    stopRecordingBtn.style.display = "block";
                 })
                 .catch(error => {
                     console.error('Error accessing microphone:', error);
                 });
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                console.log('Recording manually stopped');
+
+                // ボタンの表示を元に戻す
+                stopRecordingBtn.style.display = "none";
+                startRecordingBtn.style.display = "block";
+            }
         }
 
         function startCountdown(seconds, callback) {
@@ -152,19 +133,18 @@
             }, 1000);
         }
 
-        startRecordBtn.addEventListener('click', () => {
-            startCountdown(3, startRecording);
+        startRecordingBtn.addEventListener("click", () => {
+            startCountdown(3, () => {
+                audioPlayer.play(); // 音声を再生
+                startRecording(); // 録音を開始
+            });
         });
 
-        stopRecordBtn.addEventListener('click', () => {
-            if (mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-                console.log('Recording requested to stop');
-            }
-            startRecordBtn.disabled = false;
-            stopRecordBtn.disabled = true;
-            audioPlayer.pause();
-        });
+        stopRecordingBtn.addEventListener("click", stopRecording);
+
+        // ページがロードされたときにマイク選択をプロンプト
+        window.onload = promptMicrophoneSelection;
     </script>
 </body>
 </html>
+
