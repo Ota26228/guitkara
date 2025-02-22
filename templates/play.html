@@ -47,7 +47,7 @@
     <button id="start-recording">Start Recording</button>
     <button id="stop-recording" style="display: none;">Stop Recording</button>
 
-    <script>
+ <script>
         const audioPlayer = document.getElementById('audio-player');
         const countdownContainer = document.getElementById('countdown-container');
         const countdownDiv = document.getElementById('countdown');
@@ -55,9 +55,32 @@
         const stopRecordingBtn = document.getElementById('stop-recording');
         const filename = "{{ filename }}";
         const speedIndicator = document.getElementById('speed-indicator');
-
+        const tabContainer = document.getElementById('tabs-container');
+       
         let mediaRecorder;
         let audioChunks = [];
+        let scrollSpeed = 6.3; // 初期スクロール速度
+        let scrollStep = 2;
+        let currentSpeed = 1; // 初期倍速
+
+        // 倍速に応じてスクロール速度を調整する関数
+        function adjustScrollStep() {
+            if (currentSpeed === 0.75) {
+                scrollStep = 1.7; // スピードを遅くする
+            } else if (currentSpeed === 0.5) {
+                scrollStep = 1; // さらに遅くする
+            } else {
+                scrollStep = 2; // 通常のスクロール速度
+            }
+        }
+
+        function autoScroll(){
+            if(!audioPlayer.paused){
+                tabContainer.scrollLeft += scrollStep;
+            }
+        }
+
+        setInterval(autoScroll, scrollSpeed);
 
         function promptMicrophoneSelection() {
             navigator.mediaDevices.getUserMedia({ audio: true })
@@ -133,18 +156,24 @@
 
         // スピード変更のイベントリスナー
         document.getElementById('speed-0.75').addEventListener('click', () => {
-            audioPlayer.playbackRate = 0.75;
+            currentSpeed = 0.75; // 倍速を0.75に変更
+            audioPlayer.playbackRate = currentSpeed;
             speedIndicator.textContent = "Current speed: 0.75x";
+            adjustScrollStep();  // スクロール速度の調整
         });
 
         document.getElementById('speed-0.5').addEventListener('click', () => {
-            audioPlayer.playbackRate = 0.5;
+            currentSpeed = 0.5; // 倍速を0.5に変更
+            audioPlayer.playbackRate = currentSpeed;
             speedIndicator.textContent = "Current speed: 0.5x";
+            adjustScrollStep();  // スクロール速度の調整
         });
 
         document.getElementById('speed-1').addEventListener('click', () => {
-            audioPlayer.playbackRate = 1;
+            currentSpeed = 1; // 倍速を1に変更
+            audioPlayer.playbackRate = currentSpeed;
             speedIndicator.textContent = "Current speed: 1x";
+            adjustScrollStep();  // スクロール速度の調整
         });
 
         startRecordingBtn.addEventListener("click", () => {
@@ -157,7 +186,11 @@
         stopRecordingBtn.addEventListener("click", stopRecording);
 
         window.onload = promptMicrophoneSelection;
+
+        // 音声が終了したときにタブ譜のスクロール位置を初期位置に戻す処理
+        audioPlayer.addEventListener('ended', () => {
+            tabContainer.scrollLeft = 0;  // 初期位置にスクロール位置を戻す
+        });
     </script>
 </body>
 </html>
-

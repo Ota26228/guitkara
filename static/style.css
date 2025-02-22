@@ -190,4 +190,12 @@ audio::-webkit-media-controls-volume-slider {
 }
 
 
+#tabs-container {
+    white-space: nowrap; /* テキストを折り返さず横に流す */
+    overflow-x: auto; /* 横スクロールを有効化 */
+    overflow-y: hidden; /* 縦スクロールを無効化 */
+    width: 100%; /* コンテナの幅を確保 */
+    display: flex; /* 横並びにする */
+    align-items: center;
+}
 
