@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: guitkara
+    env: python
+    plan: free
+    python_version: "3.10"
+
