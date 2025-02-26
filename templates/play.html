@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karaoke Player</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        /* 省略: 既存のスタイル */
-    </style>
 </head>
 <body>
     <h1>Karaoke Player</h1>
@@ -59,14 +56,14 @@
        
         let mediaRecorder;
         let audioChunks = [];
-        let scrollSpeed = 6.3; // 初期スクロール速度
+        let scrollSpeed = 5.3; // 初期スクロール速度
         let scrollStep = 2;
         let currentSpeed = 1; // 初期倍速
 
         // 倍速に応じてスクロール速度を調整する関数
         function adjustScrollStep() {
             if (currentSpeed === 0.75) {
-                scrollStep = 1.7; // スピードを遅くする
+                scrollStep = 1.5; // スピードを遅くする
             } else if (currentSpeed === 0.5) {
                 scrollStep = 1; // さらに遅くする
             } else {
@@ -153,6 +150,7 @@
                 }
             }, 1000);
         }
+
 
         // スピード変更のイベントリスナー
         document.getElementById('speed-0.75').addEventListener('click', () => {
