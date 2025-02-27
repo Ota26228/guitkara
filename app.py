@@ -95,15 +95,31 @@ def calculate_score(recorded_audio, target_audio):
 
     min_length = min(len(x), len(y))
     y, x = y[:min_length], x[:min_length]
-    
+
+    # (1) 相関係数スコア (最大40点)
     correlation = np.corrcoef(y, x)[0, 1] if np.std(y) > 0 and np.std(x) > 0 else 0
-    score_from_correlation = (correlation + 1) * 10  # 最大20点
+    correlation_score = (correlation + 1) * 20  # [-1, 1] を [0, 40] に変換
 
-    pitch_score = (analyze_pitch(recorded_audio) / 100) * 3  # 最大3点
+    # (2) ピッチの一致スコア (最大20点)
+    pitch_diff = abs(analyze_pitch(recorded_audio) - analyze_pitch(target_audio))
+    pitch_score = max(0, 20 - (pitch_diff / 5) * 20)  # ピッチ差5Hzごとに-20点
 
-    final_score = 40 + score_from_correlation + pitch_score
-    return max(40, min(85, int(final_score)))  # 40~85点に制限
+    # (3) リズムの一致スコア (最大20点)
+    beat_times_y, _ = librosa.beat.beat_track(y=y, sr=22050)
+    beat_times_x, _ = librosa.beat.beat_track(y=x, sr=22050)
+    rhythm_score = max(0, 20 - abs(len(beat_times_y) - len(beat_times_x)) * 2)
 
+    # (4) 音量バランススコア (最大10点)
+    volume_ratio = np.mean(np.abs(y)) / np.mean(np.abs(x))
+    volume_score = max(0, 10 - abs(volume_ratio - 1) * 10)  # 音量が±10%内なら満点
+
+    # (5) ノイズの少なさスコア (最大10点)
+    noise_level = np.mean(np.abs(y[:1000]))  # 最初の1000フレームの平均音量
+    noise_score = max(0, 10 - noise_level * 1000)  # 小さいほど高得点
+
+    # 総合スコア計算 (100点満点に調整)
+    final_score = 40 + correlation_score + pitch_score + rhythm_score + volume_score + noise_score
+    return max(40, min(100, int(final_score)))  # スコアは 40 ~ 100 の範囲
 
 @app.route('/save_recording', methods=['POST'])
 def save_recording():
